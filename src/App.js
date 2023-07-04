@@ -2,28 +2,52 @@ import {useState, useEffect} from 'react';
 import axios from 'axios';
 
 const App = () => {
-	const [books, setBooks] = useState([]);
+	const [books, setBooks] = useState();
 
-	useEffect(() => {
-		axios
-			.get(`http://localhost:8080/books/all`)
+	console.log(books);
+
+	const getAllBooks = async () => {
+		return await axios
+			.get(`http://localhost:8090/books/all`)
 			.then((res) => {
 				setBooks(res.data);
 			})
-			.catch((error) => {
-				console.log(error);
-			});
+			.catch((error) => {});
+	};
+
+	useEffect(() => {
+		getAllBooks();
 	}, []);
+
+	useEffect(() => {
+		getAllBooks();
+	}, [books]);
+
+	const refresh = async () => {
+		const newData = await fetch(`http://localhost:8090/books/all`);
+		setBooks(newData);
+	};
 
 	const eliminarLibros = () => {
 		axios
-			.delete(`http://localhost:8080/books/deleteAll`)
+			.delete(`http://localhost:8090/books/deleteAll`)
 			.then((res) => {
 				console.log(res.data);
 			})
 			.catch((error) => {
-				console.log(error);
+				console.log(error.response?.data?.message);
 			});
+		refresh();
+	};
+
+	const eliminarUnLibro = (id) => {
+		axios
+			.delete(`http://localhost:8090/books/delete/${id}`)
+			.then((res) => {
+				console.log(res.data);
+			})
+			.catch((error) => {});
+		refresh();
 	};
 
 	return (
@@ -41,7 +65,7 @@ const App = () => {
 					gap: '25px',
 					flexWrap: 'wrap',
 				}}>
-				{books.length > 0
+				{books?.length > 0
 					? books.map((book) => (
 							<div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
 								<h4>
@@ -56,7 +80,7 @@ const App = () => {
 								</h4>
 								<div style={{display: 'flex', justifyContent: 'space-around'}}>
 									<button onClick={() => console.log('Boton Editar')}>Editar</button>
-									<button onClick={() => console.log('Boton Eliminar')}>Eliminar</button>
+									<button onClick={() => eliminarUnLibro(book.id)}>Eliminar</button>
 								</div>
 							</div>
 					  ))
