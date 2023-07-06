@@ -2,20 +2,23 @@ import {useState, useEffect} from 'react';
 import axios from 'axios';
 import {Panel} from 'primereact/panel';
 import {Menubar} from 'primereact/menubar';
-import Libro from './components/Libro';
-import {InputText} from 'primereact/inputtext';
 import {Dialog} from 'primereact/dialog';
 import {Button} from 'primereact/button';
+
 import Swal from 'sweetalert2';
+import Libro from './components/Libro';
 
 import 'primereact/resources/themes/saga-green/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import Form from './components/Form';
 
 const urlBase = `http://localhost:8080`;
 
 const Libros = () => {
 	const [books, setBooks] = useState([]);
+
+	const [editing, setEditing] = useState(false);
 
 	const [book, setBook] = useState({
 		visible: false,
@@ -53,6 +56,7 @@ const Libros = () => {
 	];
 
 	const showCreateModal = () => {
+		setEditing(false);
 		setBook({
 			visible: true,
 			dataBook: {
@@ -62,6 +66,30 @@ const Libros = () => {
 				releaseDate: null,
 			},
 		});
+	};
+
+	const showEditModal = (id) => {
+		setEditing(true);
+		console.log(id);
+		axios
+			.get(`${urlBase}/books/findOne/${id}`)
+			.then((res) => {
+				console.log(res);
+				setBook({
+					visible: true,
+					dataBook: {
+						id: res.data.id,
+						title: res.data.title,
+						author: res.data.author,
+						price: res.data.price,
+						releaseDate: res.data.releaseDate,
+					},
+				});
+				console.log(book);
+			})
+			.catch((error) => {
+				console.log(error.response?.data?.message);
+			});
 	};
 
 	const getAllBooks = async () => {
@@ -143,12 +171,13 @@ const Libros = () => {
 	};
 
 	const crearLibro = async (libro) => {
-		const res = await axios
+		await axios
 			.post(`${urlBase}/books/create`, libro)
 			.then((res) => {
 				resetForm();
 				refresh();
 				success('Libro creado con exito');
+				console.log(res.data);
 				return res.data;
 			})
 			.catch((error) => {
@@ -191,14 +220,35 @@ const Libros = () => {
 		);
 	};
 
-	const editarLibro = (id) => {
-		return 'hola';
+	const editarLibro = async (libro) => {
+		console.log(libro);
+
+		await axios
+			.put(`${urlBase}/books/update`, libro)
+			.then((res) => {
+				console.log(res.data);
+				resetForm();
+				refresh();
+				success('Libro modificado con exito');
+			})
+			.catch((error) => {
+				errorToast(error, 'Error al crear el libro');
+				resetForm();
+			});
 	};
 
-	const footer = (libro) => {
+	const createFooter = (libro) => {
 		return (
 			<div>
 				<Button label='Guardar' icon='pi pi-check' onClick={() => crearLibro(libro)} />
+			</div>
+		);
+	};
+
+	const editFooter = (libro) => {
+		return (
+			<div>
+				<Button label='Guardar' icon='pi pi-check' onClick={() => editarLibro(libro)} />
 			</div>
 		);
 	};
@@ -208,105 +258,18 @@ const Libros = () => {
 			<Panel header='Libro APP'>
 				<Menubar model={items} />
 			</Panel>
-			<Dialog header='Crear libro' visible={book.visible} footer={footer(book.dataBook)} style={{width: '400px'}} modal={true} onHide={() => setBook({visible: false})}>
-				<form id='libro-form'>
-					<span className='p-float-label'>
-						<InputText
-							className='p-inputtext-sm'
-							value={book?.dataBook?.title}
-							style={{width: '100%'}}
-							id='title'
-							tooltipOptions={{event: 'focus'}}
-							tooltip='Ingrese el título del libro'
-							onChange={(e) => {
-								let value = e.target.value;
-								setBook({
-									visible: true,
-									dataBook: {
-										...book.dataBook,
-										title: value,
-									},
-								});
-							}}
-						/>
-						<label htmlFor='title'>Titulo</label>
-					</span>
-					<br />
-					<span className='p-float-label'>
-						<InputText
-							className='p-inputtext-sm'
-							value={book?.dataBook?.author}
-							style={{width: '100%'}}
-							id='author'
-							tooltipOptions={{event: 'focus'}}
-							tooltip='Ingrese el autor del libro'
-							onChange={(e) => {
-								let val = e.target.value;
-								console.log(book.dataBook);
-								console.log(val);
-								setBook({
-									visible: true,
-									dataBook: {
-										...book.dataBook,
-										author: val,
-									},
-								});
-							}}
-						/>
-						<label htmlFor='author'>Autor</label>
-					</span>
-					<br />
-					<span className='p-float-label'>
-						<InputText
-							inputMode='numeric'
-							className='p-inputtext-sm'
-							value={book?.dataBook?.price}
-							style={{width: '100%'}}
-							id='price'
-							tooltipOptions={{event: 'focus'}}
-							tooltip='Ingrese el precio del libro'
-							onChange={(e) => {
-								let val = e.target.value;
-								console.log(book.dataBook);
-								console.log(val);
-								setBook({
-									visible: true,
-									dataBook: {
-										...book.dataBook,
-										price: val,
-									},
-								});
-							}}
-						/>
-						<label htmlFor='price'>Precio</label>
-					</span>
-					<br />
-					<span className='p-float-label'>
-						<InputText
-							className='p-inputtext-sm'
-							value={book?.dataBook?.releaseDate}
-							style={{width: '100%'}}
-							id='releaseDate'
-							tooltipOptions={{event: 'focus'}}
-							tooltip='Ingrese la fecha de lanzamiento'
-							onChange={(e) => {
-								let val = e.target.value;
-								console.log(book.dataBook);
-								console.log(val);
-								setBook({
-									visible: true,
-									dataBook: {
-										...book.dataBook,
-										releaseDate: val,
-									},
-								});
-							}}
-						/>
-						<label htmlFor='releaseDate'>Fecha lanzamiento</label>
-					</span>
-				</form>
+			<Dialog
+				header={editing ? 'Editar libro' : 'Crear libro'}
+				visible={book.visible}
+				footer={editing ? editFooter(book.dataBook) : createFooter(book.dataBook)}
+				style={{width: '400px'}}
+				modal={true}
+				onHide={() => {
+					setBook({visible: false, dataBook: {...book.dataBook}});
+				}}>
+				<Form book={book} setBook={setBook}></Form>
 			</Dialog>
-			<table class='table'>
+			<table class='table' style={{marginLeft: '10px'}}>
 				<thead>
 					<tr>
 						<th>Titulo</th>
@@ -324,10 +287,10 @@ const Libros = () => {
 							releaseDate={book.releaseDate}
 							id={book.id}
 							eliminar={eliminarUnLibro}
-							editar={editarLibro}></Libro>
+							editar={showEditModal}></Libro>
 					))
 				) : (
-					<span style={{padding: '8px'}}>No hay libros cargados</span>
+					<div style={{padding: '8px'}}>No hay libros cargados</div>
 				)}
 			</table>
 		</div>
