@@ -16,43 +16,7 @@ html {
 }
 
 body {
-	/* color: var(--white1); */
 	padding: 20px;
-}
-
-.books {
-	display: flex;
-	flex-direction: column;
-	align-self: center;
-	gap: 25px;
-	flex-wrap: wrap;
-	padding: 15px;
-}
-
-.buttons {
-	display: flex;
-	justify-content: space-around;
-	flex-direction: row;
-    align-items: center;
-    gap: 5px;
-}
-
-.book {
-	display: flex;
-	flex-direction: row;
-	border: solid 1px #2e3c3d;
-	border-radius: 5px;
-    width: 800px;
-    padding: 0 10px;
-}
-
-.menu {
-	display: flex;
-	justify-content:space-around;
-	align-items: center;
-	padding-left: 15px;
-    width: 800px;
-    align-self: center;
 }
 
 .book-app {
@@ -61,24 +25,7 @@ body {
 	gap: 15px;
 }
 
-.data-book{
-    display: flex;
-    flex-direction: row;
-    width: 800px;
-    justify-content: space-around;
-}
-
-.datos{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-around;
-    border: solid 1px greenyellow;
-    width: 800px;
-    align-self: flex-start;
-}
-
-.compo{
-    display: flex;
-    gap: 10px;
-    align-items: center;
+.input-container-error > .p-float-label {
+	border: solid 1px red;
+	border-radius: 2px;
 }

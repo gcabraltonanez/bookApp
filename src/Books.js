@@ -4,21 +4,24 @@ import {Panel} from 'primereact/panel';
 import {Menubar} from 'primereact/menubar';
 import {Dialog} from 'primereact/dialog';
 import {Button} from 'primereact/button';
+import dayjs from 'dayjs';
 
 import Swal from 'sweetalert2';
-import Libro from './components/Libro';
+import Book from './components/Book';
 
 import 'primereact/resources/themes/saga-green/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import Form from './components/Form';
 
-const urlBase = `http://localhost:8080`;
+const baseUrl = `http://localhost:8080`;
 
-const Libros = () => {
+const Books = () => {
 	const [books, setBooks] = useState([]);
 
 	const [editing, setEditing] = useState(false);
+
+	const [isEmpty, setIsEmpty] = useState(true);
 
 	const [book, setBook] = useState({
 		visible: false,
@@ -30,8 +33,15 @@ const Libros = () => {
 		},
 	});
 
+	const [errors, setErrors] = useState({
+		title: '',
+		author: '',
+		price: '',
+	});
+
 	useEffect(() => {
 		getAllBooks();
+		books.length === 0 ? setIsEmpty(true) : setIsEmpty(false);
 	}, [books?.length]);
 
 	useEffect(() => {
@@ -50,13 +60,31 @@ const Libros = () => {
 			label: 'Eliminar todos',
 			icon: 'pi pi-fw pi-trash',
 			command: () => {
-				eliminarTodosLibros();
+				deleteAllBooks();
 			},
+			disabled: isEmpty,
 		},
 	];
 
+	const getAllBooks = async () => {
+		return await axios
+			.get(`${baseUrl}/books/all`)
+			.then((res) => {
+				setBooks(res.data);
+				return res.data;
+			})
+			.catch((error) => {
+				setIsEmpty(true);
+			});
+	};
+
 	const showCreateModal = () => {
 		setEditing(false);
+		setErrors({
+			title: '',
+			author: '',
+			price: '',
+		});
 		setBook({
 			visible: true,
 			dataBook: {
@@ -70,11 +98,9 @@ const Libros = () => {
 
 	const showEditModal = (id) => {
 		setEditing(true);
-		console.log(id);
 		axios
-			.get(`${urlBase}/books/findOne/${id}`)
+			.get(`${baseUrl}/books/findOne/${id}`)
 			.then((res) => {
-				console.log(res);
 				setBook({
 					visible: true,
 					dataBook: {
@@ -85,24 +111,12 @@ const Libros = () => {
 						releaseDate: res.data.releaseDate,
 					},
 				});
-				console.log(book);
-			})
-			.catch((error) => {
-				console.log(error.response?.data?.message);
-			});
-	};
-
-	const getAllBooks = async () => {
-		return await axios
-			.get(`${urlBase}/books/all`)
-			.then((res) => {
-				setBooks(res.data);
 			})
 			.catch((error) => {});
 	};
 
 	const refresh = async () => {
-		const newData = await fetch(`${urlBase}/books/all`);
+		const newData = await fetch(`${baseUrl}/books/all`);
 		setBooks(newData);
 	};
 
@@ -118,7 +132,7 @@ const Libros = () => {
 		});
 	};
 
-	const success = (mensaje) => {
+	const successToast = (message) => {
 		const Toast = Swal.mixin({
 			toast: true,
 			position: 'top',
@@ -128,27 +142,11 @@ const Libros = () => {
 
 		Toast.fire({
 			icon: 'success',
-			title: mensaje,
+			title: message,
 		});
 	};
 
-	const errorToast = (error, mensaje) => {
-		const Toast = Swal.mixin({
-			toast: true,
-			position: 'center',
-			confirmButtonText: 'Ok',
-			timer: 5000,
-		});
-
-		Toast.fire({
-			icon: 'error',
-			title: mensaje,
-			text: error.response?.data?.message,
-			confirmButtonColor: '#e4605e',
-		});
-	};
-
-	const confirmarEliminacion = (funcion, question, mensaje) => {
+	const confirmDelete = (funct, question, message) => {
 		const Toast = Swal.mixin({
 			toast: true,
 		});
@@ -163,92 +161,93 @@ const Libros = () => {
 			cancelButtonColor: '#e4605e',
 		}).then((result) => {
 			if (result.isConfirmed) {
-				funcion();
-				success(mensaje);
+				funct();
+				successToast(message);
+				refresh();
 			} else if (result.dismiss === Swal.DismissReason.cancel) {
 			}
 		});
 	};
 
-	const crearLibro = async (libro) => {
+	const capitalize = (string) => {
+		if (!string) return null;
+		string = string.toLowerCase().trim();
+		return string.charAt(0).toUpperCase() + string.slice(1);
+	};
+
+	const createBook = async (reqBook) => {
 		await axios
-			.post(`${urlBase}/books/create`, libro)
+			.post(`${baseUrl}/books/create`, {
+				...reqBook,
+				title: capitalize(reqBook.title),
+				author: capitalize(reqBook.author),
+			})
 			.then((res) => {
 				resetForm();
 				refresh();
-				success('Libro creado con exito');
-				console.log(res.data);
+				successToast('Libro creado con exito');
 				return res.data;
 			})
 			.catch((error) => {
-				errorToast(error, 'Error al crear el libro');
-				resetForm();
+				error.response.data.message
+					? error.request.status === 400
+						? setErrors({title: error.response.data.message})
+						: setErrors({author: error.response.data.message})
+					: setErrors(error.response.data);
 			});
 	};
 
-	const eliminarUnLibro = (id) => {
-		confirmarEliminacion(
+	const deleteBook = (id) => {
+		confirmDelete(
 			() => {
 				axios
-					.delete(`${urlBase}/books/delete/${id}`)
-					.then((res) => {
-						console.log(res.data);
-					})
+					.delete(`${baseUrl}/books/delete/${id}`)
+					.then((res) => {})
 					.catch((error) => {});
-				refresh();
 			},
 			'Desea eliminar este registro?',
 			'Registro eliminado'
 		);
 	};
 
-	const eliminarTodosLibros = () => {
-		confirmarEliminacion(
+	const deleteAllBooks = () => {
+		confirmDelete(
 			() => {
 				axios
-					.delete(`${urlBase}/books/deleteAll`)
-					.then((res) => {
-						console.log(res.data);
-					})
-					.catch((error) => {
-						console.log(error.response?.data?.message);
-					});
-				refresh();
+					.delete(`${baseUrl}/books/deleteAll`)
+					.then((res) => {})
+					.catch((error) => {});
 			},
 			'Desea eliminar todos los registros?',
 			'Se eliminaron todos los registros'
 		);
 	};
 
-	const editarLibro = async (libro) => {
-		console.log(libro);
-
+	const editBook = async (reqBook) => {
 		await axios
-			.put(`${urlBase}/books/update`, libro)
+			.put(`${baseUrl}/books/update`, reqBook)
 			.then((res) => {
-				console.log(res.data);
 				resetForm();
 				refresh();
-				success('Libro modificado con exito');
+				successToast('Libro modificado con exito');
 			})
 			.catch((error) => {
-				errorToast(error, 'Error al crear el libro');
-				resetForm();
+				error.response.data.message ? setErrors({title: error.response.data.message}) : setErrors(error.response.data);
 			});
 	};
 
-	const createFooter = (libro) => {
+	const createFooter = (reqBook) => {
 		return (
 			<div>
-				<Button label='Guardar' icon='pi pi-check' onClick={() => crearLibro(libro)} />
+				<Button label='Crear' icon='pi pi-plus' onClick={() => createBook(reqBook)} />
 			</div>
 		);
 	};
 
-	const editFooter = (libro) => {
+	const editFooter = (reqBook) => {
 		return (
 			<div>
-				<Button label='Guardar' icon='pi pi-check' onClick={() => editarLibro(libro)} />
+				<Button label='Guardar' icon='pi pi-pencil' onClick={() => editBook(reqBook)} />
 			</div>
 		);
 	};
@@ -259,6 +258,7 @@ const Libros = () => {
 				<Menubar model={items} />
 			</Panel>
 			<Dialog
+				draggable={false}
 				header={editing ? 'Editar libro' : 'Crear libro'}
 				visible={book.visible}
 				footer={editing ? editFooter(book.dataBook) : createFooter(book.dataBook)}
@@ -267,7 +267,7 @@ const Libros = () => {
 				onHide={() => {
 					setBook({visible: false, dataBook: {...book.dataBook}});
 				}}>
-				<Form book={book} setBook={setBook}></Form>
+				<Form book={book} setBook={setBook} editing={editing} errors={errors} />
 			</Dialog>
 			<table class='table' style={{marginLeft: '10px'}}>
 				<thead>
@@ -280,14 +280,14 @@ const Libros = () => {
 				</thead>
 				{books.length > 0 ? (
 					books?.map((book) => (
-						<Libro
+						<Book
 							title={book.title}
 							author={book.author}
 							price={book.price}
-							releaseDate={book.releaseDate}
+							releaseDate={dayjs(book?.releaseDate).format('DD/MM/YYYY')}
 							id={book.id}
-							eliminar={eliminarUnLibro}
-							editar={showEditModal}></Libro>
+							deleteBook={deleteBook}
+							editBook={showEditModal}></Book>
 					))
 				) : (
 					<div style={{padding: '8px'}}>No hay libros cargados</div>
@@ -296,4 +296,4 @@ const Libros = () => {
 		</div>
 	);
 };
-export default Libros;
+export default Books;
