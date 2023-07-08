@@ -13,12 +13,14 @@
 -   Editor de texto **Visual Studio Code**
 -   **Git** para el versionado
 <br>
+
 ## Como probar el proyecto en su equipo
 <br>
 
 -   Es recomendable contar con el editor de texto **Visual Studio Code** para abrir el proyecto, sin embargo puede utilizar el de su preferencia (**Sublime Text, Notepad++**).
 
 <br>
+
 ## Pasos a seguir
 <br>
 
