@@ -202,7 +202,9 @@ const Books = () => {
 			() => {
 				axios
 					.delete(`${baseUrl}/books/delete/${id}`)
-					.then((res) => {})
+					.then((res) => {
+						refresh();
+					})
 					.catch((error) => {});
 			},
 			'Desea eliminar este registro?',
@@ -215,7 +217,10 @@ const Books = () => {
 			() => {
 				axios
 					.delete(`${baseUrl}/books/deleteAll`)
-					.then((res) => {})
+					.then((res) => {
+						refresh();
+						// return res.data;
+					})
 					.catch((error) => {});
 			},
 			'Desea eliminar todos los registros?',
