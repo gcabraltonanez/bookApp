@@ -26,10 +26,11 @@ const BookDatePicker = ({book, setBook, editing}) => {
 			<Box mt={2}>
 				<DemoItem>
 					<DatePicker
+						format="DD/MM/YYYY"
 						label='Fecha Lanzamiento'
 						slotProps={{
 							textField: {
-								helperText: 'mes/día/año',
+								helperText: 'día/mes/año',
 							},
 						}}
 						defaultValue={dayjs(new Date())}
