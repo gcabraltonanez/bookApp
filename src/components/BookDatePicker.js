@@ -6,6 +6,7 @@ import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import {useEffect, useState} from 'react';
+import 'dayjs/locale/es';
 
 const BookDatePicker = ({book, setBook, editing}) => {
 	const [selectedDate, setSelectedDate] = useState(new Date());
@@ -22,12 +23,13 @@ const BookDatePicker = ({book, setBook, editing}) => {
 	}, []);
 
 	return (
-		<LocalizationProvider dateAdapter={AdapterDayjs}>
+		<LocalizationProvider adapterLocale='es' dateAdapter={AdapterDayjs}>
 			<Box mt={2}>
 				<DemoItem>
 					<DatePicker
-						format="DD/MM/YYYY"
+						format='DD/MM/YYYY'
 						label='Fecha Lanzamiento'
+						views={['year', 'month', 'day']}
 						slotProps={{
 							textField: {
 								helperText: 'día/mes/año',
