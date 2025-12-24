@@ -1,0 +1,4 @@
+.inputWrapperError > .p-float-label {
+	border: solid 1px #dc3545;
+	border-radius: 2px;
+}

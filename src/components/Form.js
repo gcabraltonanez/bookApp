@@ -1,37 +1,56 @@
-import React from 'react';
 import Input from './Input';
-
-import 'react-datepicker/dist/react-datepicker.css';
 import BookDatePicker from './BookDatePicker';
+import {ErrorMessage} from './common';
+import {MESSAGES} from '../constants';
+import styles from './Form.module.css';
 
 const Form = ({book, setBook, editing, errors}) => {
-	let styles = {
-		fontWeight: 'bold',
-		color: '#dc3545',
-		fontSize: '15px',
-		margin: '2px 0 0 4px',
-	};
-
 	return (
 		<div>
 			<form id='book-form' style={{marginTop: '25px'}}>
-				<span className={errors.title && 'input-container-error'}>
-					<Input book={book} setBook={setBook} field={'title'} label={'Titulo'} tooltip={'Ingrese el título del libro'} type={'text'} />
+				<span className={errors.title ? styles.inputWrapperError : ''}>
+					<Input
+						book={book}
+						setBook={setBook}
+						field='title'
+						label={MESSAGES.FORM.TITLE_LABEL}
+						tooltip={MESSAGES.FORM.TITLE_TOOLTIP}
+						type='text'
+					/>
 				</span>
-				{errors.title && <p style={styles}>{errors.title}</p>}
+				<ErrorMessage message={errors.title} />
 
 				<br />
-				<span className={errors.author && 'input-container-error'}>
-					<Input book={book} setBook={setBook} field={'author'} label={'Autor'} tooltip={'Ingrese el autor'} type={'text'} />
-					{errors.author && <p style={styles}>{errors.author}</p>}
+				<span className={errors.author ? styles.inputWrapperError : ''}>
+					<Input
+						book={book}
+						setBook={setBook}
+						field='author'
+						label={MESSAGES.FORM.AUTHOR_LABEL}
+						tooltip={MESSAGES.FORM.AUTHOR_TOOLTIP}
+						type='text'
+					/>
 				</span>
+				<ErrorMessage message={errors.author} />
+
 				<br />
-				<span className={errors.price && 'input-container-error'}>
-					<Input book={book} setBook={setBook} field={'price'} label={'Precio'} tooltip={'Ingrese el precio'} type={'number'} />
-					{errors.price && <p style={styles}>{errors.price}</p>}
+				<span className={errors.price ? styles.inputWrapperError : ''}>
+					<Input
+						book={book}
+						setBook={setBook}
+						field='price'
+						label={MESSAGES.FORM.PRICE_LABEL}
+						tooltip={MESSAGES.FORM.PRICE_TOOLTIP}
+						type='number'
+					/>
 				</span>
+				<ErrorMessage message={errors.price} />
+
 				<br />
-				<BookDatePicker book={book} setBook={setBook} editing={editing} />
+				<span className={errors.releaseDate ? styles.inputWrapperError : ''}>
+					<BookDatePicker book={book} setBook={setBook} editing={editing} />
+				</span>
+				<ErrorMessage message={errors.releaseDate} />
 			</form>
 		</div>
 	);

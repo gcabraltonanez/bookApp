@@ -1,10 +1,7 @@
-import React from 'react'
-import Books from './Books'
+import Books from './Books';
 
 const App = () => {
-  return (
-    <Books/>
-  )
-}
+	return <Books />;
+};
 
-export default App
+export default App;

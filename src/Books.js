@@ -1,304 +1,138 @@
-import {useState, useEffect} from 'react';
-import axios from 'axios';
-import {Panel} from 'primereact/panel';
-import {Menubar} from 'primereact/menubar';
-import {Dialog} from 'primereact/dialog';
-import {Button} from 'primereact/button';
-import dayjs from 'dayjs';
+import {useCallback} from 'react';
 
-import Swal from 'sweetalert2';
-import Book from './components/Book';
+import BookMenuBar from './components/BookMenuBar';
+import BookDialog from './components/BookDialog';
+import BookTable from './components/BookTable';
+
+import {useBooks, useBookForm, useConfirmDialog, useToast} from './hooks';
+import {capitalize} from './utils';
+import {MESSAGES} from './constants';
 
 import 'primereact/resources/themes/saga-green/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
-import Form from './components/Form';
-
-const baseUrl = `http://localhost:8080`;
+import styles from './Books.module.css';
 
 const Books = () => {
-	const [books, setBooks] = useState([]);
+	// Custom hooks
+	const {books, isLoading, createBook, updateBook, deleteBook, deleteAllBooks, fetchBookById} = useBooks();
+	const {isVisible, isEditing, bookData, errors, openCreateModal, openEditModal, closeModal, updateBookData, handleApiError} =
+		useBookForm();
+	const {showConfirmDialog} = useConfirmDialog();
+	const {showSuccess} = useToast();
 
-	const [editing, setEditing] = useState(false);
+	/**
+	 * Maneja la creación de un libro
+	 */
+	const handleCreateBook = useCallback(async () => {
+		try {
+			const bookToCreate = {
+				...bookData,
+				title: capitalize(bookData.title),
+				author: capitalize(bookData.author),
+			};
 
-	const [isEmpty, setIsEmpty] = useState(true);
+			await createBook(bookToCreate);
+			closeModal();
+			showSuccess(MESSAGES.SUCCESS.BOOK_CREATED);
+		} catch (error) {
+			handleApiError(error);
+		}
+	}, [bookData, createBook, closeModal, showSuccess, handleApiError]);
 
-	const [book, setBook] = useState({
-		visible: false,
-		dataBook: {
-			title: null,
-			author: null,
-			price: null,
-			releaseDate: null,
-		},
-	});
+	/**
+	 * Maneja la edición de un libro
+	 */
+	const handleEditBook = useCallback(async () => {
+		try {
+			await updateBook(bookData);
+			closeModal();
+			showSuccess(MESSAGES.SUCCESS.BOOK_UPDATED);
+		} catch (error) {
+			handleApiError(error);
+		}
+	}, [bookData, updateBook, closeModal, showSuccess, handleApiError]);
 
-	const [errors, setErrors] = useState({
-		title: '',
-		author: '',
-		price: '',
-	});
-
-	useEffect(() => {
-		getAllBooks();
-		books.length === 0 ? setIsEmpty(true) : setIsEmpty(false);
-	}, [books?.length]);
-
-	useEffect(() => {
-		getAllBooks();
-	}, [book]);
-
-	const items = [
-		{
-			label: 'Nuevo',
-			icon: 'pi pi-fw pi-plus',
-			command: () => {
-				showCreateModal();
-			},
-		},
-		{
-			label: 'Eliminar todos',
-			icon: 'pi pi-fw pi-trash',
-			command: () => {
-				deleteAllBooks();
-			},
-			disabled: isEmpty,
-		},
-	];
-
-	const getAllBooks = async () => {
-		return await axios
-			.get(`${baseUrl}/books/all`)
-			.then((res) => {
-				setBooks(res.data);
-				return res.data;
-			})
-			.catch((error) => {
-				setIsEmpty(true);
-			});
-	};
-
-	const showCreateModal = () => {
-		setEditing(false);
-		setErrors({
-			title: '',
-			author: '',
-			price: '',
-		});
-		setBook({
-			visible: true,
-			dataBook: {
-				title: null,
-				author: null,
-				price: null,
-				releaseDate: null,
-			},
-		});
-	};
-
-	const showEditModal = (id) => {
-		setEditing(true);
-		axios
-			.get(`${baseUrl}/books/findOne/${id}`)
-			.then((res) => {
-				setBook({
-					visible: true,
-					dataBook: {
-						id: res.data.id,
-						title: res.data.title,
-						author: res.data.author,
-						price: res.data.price,
-						releaseDate: res.data.releaseDate,
-					},
-				});
-			})
-			.catch((error) => {});
-	};
-
-	const refresh = async () => {
-		const newData = await fetch(`${baseUrl}/books/all`);
-		setBooks(newData);
-	};
-
-	const resetForm = () => {
-		setBook({
-			visible: false,
-			dataBook: {
-				title: null,
-				author: null,
-				price: null,
-				releaseDate: null,
-			},
-		});
-	};
-
-	const successToast = (message) => {
-		const Toast = Swal.mixin({
-			toast: true,
-			position: 'top',
-			showConfirmButton: false,
-			timer: 2500,
-		});
-
-		Toast.fire({
-			icon: 'success',
-			title: message,
-		});
-	};
-
-	const confirmDelete = (funct, question, message) => {
-		const Toast = Swal.mixin({
-			toast: true,
-		});
-
-		Toast.fire({
-			title: question,
-			icon: 'warning',
-			showCancelButton: true,
-			confirmButtonText: 'Eliminar',
-			cancelButtonText: 'Cancelar',
-			confirmButtonColor: '#239B56',
-			cancelButtonColor: '#e4605e',
-		}).then((result) => {
-			if (result.isConfirmed) {
-				funct();
-				successToast(message);
-				refresh();
-			} else if (result.dismiss === Swal.DismissReason.cancel) {
+	/**
+	 * Abre el modal de edición y carga los datos del libro
+	 */
+	const handleOpenEditModal = useCallback(
+		async (id) => {
+			try {
+				const book = await fetchBookById(id);
+				openEditModal(book);
+			} catch (error) {
+				console.error('Error al cargar el libro:', error);
 			}
-		});
-	};
+		},
+		[fetchBookById, openEditModal]
+	);
 
-	const capitalize = (string) => {
-		if (!string) return null;
-		string = string.toLowerCase().trim();
-		return string.charAt(0).toUpperCase() + string.slice(1);
-	};
+	/**
+	 * Maneja la eliminación de un libro
+	 */
+	const handleDeleteBook = useCallback(
+		(id) => {
+			showConfirmDialog(
+				async () => {
+					try {
+						await deleteBook(id);
+						showSuccess(MESSAGES.SUCCESS.BOOK_DELETED);
+					} catch (error) {
+						console.error('Error al eliminar libro:', error);
+					}
+				},
+				MESSAGES.CONFIRM.DELETE_BOOK
+			);
+		},
+		[deleteBook, showConfirmDialog, showSuccess]
+	);
 
-	const createBook = async (reqBook) => {
-		await axios
-			.post(`${baseUrl}/books/create`, {
-				...reqBook,
-				title: capitalize(reqBook.title),
-				author: capitalize(reqBook.author),
-			})
-			.then((res) => {
-				resetForm();
-				refresh();
-				successToast('Libro creado con exito');
-				return res.data;
-			})
-			.catch((error) => {
-				error.response.data.message
-					? error.request.status === 400
-						? setErrors({title: error.response.data.message})
-						: setErrors({author: error.response.data.message})
-					: setErrors(error.response.data);
-			});
-	};
-
-	const deleteBook = (id) => {
-		confirmDelete(
-			() => {
-				axios
-					.delete(`${baseUrl}/books/delete/${id}`)
-					.then((res) => {
-						refresh();
-					})
-					.catch((error) => {});
+	/**
+	 * Maneja la eliminación de todos los libros
+	 */
+	const handleDeleteAllBooks = useCallback(() => {
+		showConfirmDialog(
+			async () => {
+				try {
+					await deleteAllBooks();
+					showSuccess(MESSAGES.SUCCESS.ALL_BOOKS_DELETED);
+				} catch (error) {
+					console.error('Error al eliminar todos los libros:', error);
+				}
 			},
-			'Desea eliminar este registro?',
-			'Registro eliminado'
+			MESSAGES.CONFIRM.DELETE_ALL_BOOKS
 		);
-	};
+	}, [deleteAllBooks, showConfirmDialog, showSuccess]);
 
-	const deleteAllBooks = () => {
-		confirmDelete(
-			() => {
-				axios
-					.delete(`${baseUrl}/books/deleteAll`)
-					.then((res) => {
-						refresh();
-						// return res.data;
-					})
-					.catch((error) => {});
-			},
-			'Desea eliminar todos los registros?',
-			'Se eliminaron todos los registros'
-		);
-	};
-
-	const editBook = async (reqBook) => {
-		await axios
-			.put(`${baseUrl}/books/update`, reqBook)
-			.then((res) => {
-				resetForm();
-				refresh();
-				successToast('Libro modificado con exito');
-			})
-			.catch((error) => {
-				error.response.data.message ? setErrors({title: error.response.data.message}) : setErrors(error.response.data);
-			});
-	};
-
-	const createFooter = (reqBook) => {
-		return (
-			<div>
-				<Button label='Crear' icon='pi pi-plus' onClick={() => createBook(reqBook)} />
-			</div>
-		);
-	};
-
-	const editFooter = (reqBook) => {
-		return (
-			<div>
-				<Button label='Guardar' icon='pi pi-pencil' onClick={() => editBook(reqBook)} />
-			</div>
-		);
-	};
+	/**
+	 * Maneja el guardado del libro (crear o editar)
+	 */
+	const handleSaveBook = useCallback(() => {
+		if (isEditing) {
+			handleEditBook();
+		} else {
+			handleCreateBook();
+		}
+	}, [isEditing, handleEditBook, handleCreateBook]);
 
 	return (
-		<div className='book-app'>
-			<Panel header='Libro APP'>
-				<Menubar model={items} />
-			</Panel>
-			<Dialog
-				draggable={false}
-				header={editing ? 'Editar libro' : 'Crear libro'}
-				visible={book.visible}
-				footer={editing ? editFooter(book.dataBook) : createFooter(book.dataBook)}
-				style={{width: '400px'}}
-				modal={true}
-				onHide={() => {
-					setBook({visible: false, dataBook: {...book.dataBook}});
-				}}>
-				<Form book={book} setBook={setBook} editing={editing} errors={errors} />
-			</Dialog>
-			<table class='table' style={{marginLeft: '10px'}}>
-				<thead>
-					<tr>
-						<th>Titulo</th>
-						<th>Autor</th>
-						<th>Precio</th>
-						<th>Fecha de lanzamiento</th>
-					</tr>
-				</thead>
-				{books.length > 0 ? (
-					books?.map((book) => (
-						<Book
-							title={book.title}
-							author={book.author}
-							price={book.price}
-							releaseDate={dayjs(book?.releaseDate).format('DD/MM/YYYY')}
-							id={book.id}
-							deleteBook={deleteBook}
-							editBook={showEditModal}></Book>
-					))
-				) : (
-					<div style={{padding: '8px'}}>No hay libros cargados</div>
-				)}
-			</table>
+		<div className={styles.bookApp}>
+			<BookMenuBar onCreateBook={openCreateModal} onDeleteAll={handleDeleteAllBooks} isEmpty={books.length === 0} />
+
+			<BookDialog
+				isVisible={isVisible}
+				isEditing={isEditing}
+				bookData={bookData}
+				errors={errors}
+				onClose={closeModal}
+				onSave={handleSaveBook}
+				onUpdateBook={updateBookData}
+			/>
+
+			<BookTable books={books} isLoading={isLoading} onDeleteBook={handleDeleteBook} onEditBook={handleOpenEditModal} />
 		</div>
 	);
 };
+
 export default Books;

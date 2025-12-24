@@ -17,7 +17,7 @@ const BookDatePicker = ({book, setBook, editing}) => {
 				visible: true,
 				dataBook: {
 					...book.dataBook,
-					releaseDate: dayjs(selectedDate).format('MM/DD/YYYY'),
+					releaseDate: dayjs(selectedDate).format('DD-MM-YYYY'),
 				},
 			});
 	}, []);
@@ -34,16 +34,29 @@ const BookDatePicker = ({book, setBook, editing}) => {
 							textField: {
 								helperText: 'día/mes/año',
 							},
+							popper: {
+								placement: 'bottom-start',
+								modifiers: [
+									{
+										name: 'flip',
+										enabled: false,
+									},
+									{
+										name: 'preventOverflow',
+										enabled: false,
+									},
+								],
+							},
 						}}
 						defaultValue={dayjs(new Date())}
-						value={editing ? dayjs(book?.dataBook?.releaseDate) : dayjs(selectedDate)}
+						value={editing ? dayjs(book?.dataBook?.releaseDate, 'DD-MM-YYYY') : dayjs(selectedDate)}
 						maxDate={dayjs(new Date())}
 						onChange={(newValue) => {
 							setBook({
 								visible: true,
 								dataBook: {
 									...book.dataBook,
-									releaseDate: dayjs(newValue.$d).format('MM/DD/YYYY'),
+									releaseDate: dayjs(newValue.$d).format('DD-MM-YYYY'),
 								},
 							});
 							setSelectedDate(newValue.$d);

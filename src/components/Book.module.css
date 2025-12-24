@@ -1,0 +1,17 @@
+.bookRow {
+	transition: background-color 0.2s ease;
+}
+
+.bookRow:hover {
+	background-color: #f5f5f5;
+}
+
+.actionsCell {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.actionButton {
+	height: 40px;
+}
